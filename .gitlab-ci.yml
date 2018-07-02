@@ -52,11 +52,11 @@ build:
   allow_failure: true
   before_script:
     - apt-get update  -qq -y
-    - apt-get install -qq -y git libffi-dev make python python-boto
-    - mkdir -p /go/src/github.com/vente-privee
-    - ln -s /builds/noc/influxdb-relay /go/src/github.com/vente-privee/
+    - apt-get install -qq -y git libffi-dev make python python-boto rsync
+    - mkdir -p /go/src/github.com/vente-privee/influxdb-relay
+    - rsync -avz /builds/noc/ /go/src/github.com/vente-privee
   script:
-    - python build.py
+    - python /go/src/github.com/vente-privee/influxdb-relay/build.py
 
 goget:
   stage: build
