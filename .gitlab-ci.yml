@@ -53,7 +53,8 @@ build:
   before_script:
     - apt-get update  -qq -y
     - apt-get install -qq -y git libffi-dev make python python-boto
-    - export GOPATH='/builds/noc/influxdb-relay'
+    - mkdir /go/src/github.com/vente-privee
+    - ln -s /builds/noc/influxdb-relay /go/src/github.com/vente-privee/
   script:
     - python build.py
 
