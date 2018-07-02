@@ -53,6 +53,7 @@ build:
   before_script:
     - apt-get update  -qq -y
     - apt-get install -qq -y git libffi-dev make python python-boto
+    - export GOPATH='/builds/noc/influxdb-relay'
   script:
     - python build.py
 
