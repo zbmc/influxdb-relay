@@ -234,18 +234,25 @@ a few scenarios that need to be accounted for:
 ## Building
 
 The recommended method  for building `influxdb-relay` is to use  Docker and the
-included `Dockerfile`, which includes all of the necessary dependencies.
+included `Dockerfile.build`, which includes all of the necessary dependencies.
 
 To build the docker image, you can run:
 
 ```sh
-docker build -f Dockerfile -t influxdb-relay-builder:latest .
+docker build \
+         --file Dockerfile.build \
+         --rm \
+         --tag influxdb-relay-builder:latest \
+         .
 ```
 
 And then to build the project:
 
 ```sh
-docker run --rm -v $(pwd):/root/go/src/github.com/vente-privee/influxdb-relay influxdb-relay-builder
+docker run \
+         --rm \
+         --volume $(pwd):/go/src/github.com/vente-privee/influxdb-relay \
+         influxdb-relay-builder:latest
 ```
 
 *NOTE*  By default,  builds will  be for  AMD64 Linux  (since the  container is
@@ -257,7 +264,10 @@ any build output in  the `./build` directory. To see a  list of available build
 commands, append a `--help` to the command above.
 
 ```sh
-docker run -v $(pwd):/root/go/src/github.com/vente-privee/influxdb-relay influxdb-relay-builder --help
+docker run \
+         --rm \
+         --volume $(pwd):/go/src/github.com/vente-privee/influxdb-relay \
+         influxdb-relay-builder:latest --help
 ```
 
 ### Packages
@@ -266,7 +276,10 @@ To build  system packages for  Linux (`deb`,  `rpm`, etc), use  the `--package`
 option:
 
 ```sh
-docker run -v $(pwd):/root/go/src/github.com/vente-privee/influxdb-relay influxdb-relay-builder --package
+docker run \
+         --rm \
+         --volume $(pwd):/go/src/github.com/vente-privee/influxdb-relay \
+         influxdb-relay-builder:latest --package
 ```
 
 To build  packages for other  platforms or architectures, use  the `--platform`

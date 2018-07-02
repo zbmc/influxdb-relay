@@ -45,7 +45,24 @@ pylint:
     - find . -type f -name "*\.py" | xargs -I{} pylint {}
 
 # build
-docker:
+build:
+  stage: build
+  image: vpgrp/golang:latest
+  allow_failure: true
+  before_script:
+    - apt-get update  -qq -y
+    - apt-get install -qq -y git libffi-dev make python python-boto
+  script:
+    - python build.py
+
+goget:
+  stage: build
+  image: vpgrp/golang:latest
+  allow_failure: true
+  script:
+    - go get -u github.com/vente-privee/influxdb-relay
+
+docker-build:
   stage: build
   image: docker:latest
   allow_failure: true
@@ -54,13 +71,17 @@ docker:
   variables:
     DOCKER_DRIVER: overlay
   script:
-    - docker build -f Dockerfile -t influxdb-relay-builder:latest .
-    - docker run -v $(pwd):/root/go/src/github.com/vente-privee/influxdb-relay influxdb-relay-builder
+    - docker build --file Dockerfile.build --rm --tag influxdb-relay-builder:latest .
+    - docker run --rm --volume $(pwd):/go/src/github.com/vente-privee/influxdb-relay influxdb-relay-builder
 
-go-get:
+docker-goget:
   stage: build
-  image: vpgrp/golang:latest
+  image: docker:latest
   allow_failure: true
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay
   script:
-    - go get -u github.com/vente-privee/influxdb-relay
+    - docker build --file Dockerfile --rm --tag influxdb-relay:latest .
 # EOF

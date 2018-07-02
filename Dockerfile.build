@@ -20,14 +20,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-FROM vpgrp/golang:latest
+FROM vpgrp/debian:latest
 
-ENV TZ="Europe/Amsterdam"
+ENV DEBIAN_FRONTEND="noninteractive" \
+    GO_ARCH="amd64" \
+    GO_VERSION="1.10.3" \
+    GOPATH="/go" \
+    TZ="Europe/Amsterdam"
 
-# https://github.com/vente-privee/influxdb-relay
-RUN go get -u github.com/vente-privee/influxdb-relay
+RUN apt-get update  -qq && \
+    apt-get upgrade -qq -y && \
+    apt-get install -qq -y \
+      curl \
+      git \
+      libffi-dev \
+      make \
+      mercurial \
+      python \
+      python-boto \
+      rpm \
+      ruby \
+      ruby-dev \
+      zip
 
-ENTRYPOINT [ "/go/bin/influxdb-relay" ]
+ENV GO_FILE="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
 
-CMD [ "-config", "/etc/influxdb-relay/influxdb-relay.conf" ]
+RUN curl \
+      --fail \
+      --location \
+      --output /${GO_FILE} \
+      --silent \
+      --show-error \
+      https://dl.google.com/go/${GO_FILE} && \
+    tar -C /usr/local/ -xf /${GO_FILE} && \
+    rm /${GO_FILE}
+
+ENV PATH="${GOPATH}/bin:${PATH}:/usr/local/go/bin"
+
+WORKDIR /go/src/github.com/vente-privee/influxdb-relay
+
+ENTRYPOINT [ "/go/src/github.com/vente-privee/influxdb-relay/build.py" ]
 # EOF
