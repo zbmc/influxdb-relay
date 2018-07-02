@@ -54,8 +54,9 @@ build:
     - apt-get update  -qq -y
     - apt-get install -qq -y git libffi-dev make python python-boto rsync
     - mkdir -p /go/src/github.com/vente-privee/influxdb-relay
-    - rsync -avz /builds/noc/ /go/src/github.com/vente-privee
+    - rsync -az /builds/noc/ /go/src/github.com/vente-privee
   script:
+    - cd /go/src/github.com/vente-privee/influxdb-relay
     - python /go/src/github.com/vente-privee/influxdb-relay/build.py
 
 goget:
