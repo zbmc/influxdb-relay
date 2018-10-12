@@ -28,7 +28,7 @@ type HTTP struct {
 	cert string
 	rp   string
 
-	pingResponseCode int
+	pingResponseCode    int
 	pingResponseHeaders map[string]string
 
 	closing int64

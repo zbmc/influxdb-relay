@@ -5,7 +5,7 @@ type Input string
 
 const (
 	// TypeInfluxdb input type
-	TypeInfluxdb   Input = "influxdb"
+	TypeInfluxdb Input = "influxdb"
 	// TypePrometheus input type
 	TypePrometheus Input = "prometheus"
 )

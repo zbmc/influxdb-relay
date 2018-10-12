@@ -3,12 +3,13 @@ package relay
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/influxdata/influxdb/models"
-	"github.com/vente-privee/influxdb-relay/config"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
+
+	"github.com/influxdata/influxdb/models"
+	"github.com/vente-privee/influxdb-relay/config"
 )
 
 func (h *HTTP) handleStatus(w http.ResponseWriter, r *http.Request) {

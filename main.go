@@ -16,13 +16,13 @@ const (
 )
 
 var (
-	usage		= func() {
+	usage = func() {
 		fmt.Println("Please, see README for more information about InfluxDB Relay...\n")
 		flag.PrintDefaults()
 	}
 
-	configFile 	= flag.String("config", "", "Configuration file to use")
-	verbose    	= flag.Bool("v", false, "If set, InfluxDB Relay will log HTTP requests")
+	configFile  = flag.String("config", "", "Configuration file to use")
+	verbose     = flag.Bool("v", false, "If set, InfluxDB Relay will log HTTP requests")
 	versionFlag = flag.Bool("version", false, "Print current InfluxDB Relay version")
 )
 
