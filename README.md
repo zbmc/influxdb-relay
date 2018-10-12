@@ -74,7 +74,7 @@ or
 Docker pull our image.
 
 ```sh
-docker pull vptech/nfluxdb-relay-builder:latest
+docker pull vptech/influxdb-relay-builder:latest
 mkdir -p /etc/influxdb-relay
 cp ${GOPATH}/src/github.com/vente-privee/influxdb-relay/examples/sample.conf \
    /etc/influxdb-relay/influxdb-relay.conf
