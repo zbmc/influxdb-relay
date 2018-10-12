@@ -1,6 +1,7 @@
+.idea/
 *.swp
 build
 build/*
 influxdb-relay
 pkg
-.idea/
+pkg/*

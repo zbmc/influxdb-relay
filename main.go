@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("Influxdb-relay version " + relayVersion)
+		fmt.Println("influxdb-relay version " + relayVersion)
 		return
 	}
 

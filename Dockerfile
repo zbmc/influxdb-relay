@@ -24,10 +24,12 @@ FROM vpgrp/golang:latest
 
 ENV TZ="Europe/Amsterdam"
 
-# https://github.com/vente-privee/influxdb-relay
-RUN go get -u github.com/vente-privee/influxdb-relay
+RUN go get -u github.com/vente-privee/influxdb-relay && \
+    cp /go/bin/influxdb-relay /usr/bin/influxdb-relay && \
+    chmod 755 /usr/bin/influxdb-relay && \
+    mkdir /etc/influxdb-relay
 
-ENTRYPOINT [ "/go/bin/influxdb-relay" ]
+ENTRYPOINT [ "/usr/bin/influxdb-relay" ]
 
 CMD [ "-config", "/etc/influxdb-relay/influxdb-relay.conf" ]
 # EOF

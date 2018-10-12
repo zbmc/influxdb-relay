@@ -11,7 +11,6 @@ dockerlint:
   image: vpgrp/linter:docker
   script:
     - find . -type f -name "Dockerfile" | grep -v 'vendor' | xargs -I{} dockerlint {}
-  allow_failure: true
 
 golint:
   stage: linter
@@ -20,14 +19,17 @@ golint:
     - go get github.com/GeertJohan/fgt
   script:
     - find . -type f -name "*\.go" | grep -v 'vendor' | xargs -I{} fgt golint {}
-  allow_failure: true
 
 # build
-go-get:
+docker-build:
   stage: build
-  image: vpgrp/golang:latest
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay
   script:
-    - go get -u github.com/vente-privee/influxdb-relay
+    - docker build --rm .
 
 go-build:
   stage: build
@@ -39,4 +41,3 @@ go-build:
     - cd ${GOPATH}/src/github.com/vente-privee/influxdb-relay
     - go build -a -ldflags '-extldflags "-static"' -o influxdb-relay
 # EOF
-
