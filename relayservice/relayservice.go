@@ -1,21 +1,26 @@
-package relay
+package relayservice
 
 import (
 	"fmt"
 	"log"
 	"sync"
+
+	"github.com/vente-privee/influxdb-relay/config"
+	"github.com/vente-privee/influxdb-relay/relay"
 )
 
+// Service is a map of relays
 type Service struct {
-	relays map[string]Relay
+	relays map[string]relay.Relay
 }
 
-func New(config Config) (*Service, error) {
+// New loads the different relays from the configuration file
+func New(config config.Config) (*Service, error) {
 	s := new(Service)
-	s.relays = make(map[string]Relay)
+	s.relays = make(map[string]relay.Relay)
 
 	for _, cfg := range config.HTTPRelays {
-		h, err := NewHTTP(cfg)
+		h, err := relay.NewHTTP(cfg, config.Verbose)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +31,7 @@ func New(config Config) (*Service, error) {
 	}
 
 	for _, cfg := range config.UDPRelays {
-		u, err := NewUDP(cfg)
+		u, err := relay.NewUDP(cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -39,6 +44,9 @@ func New(config Config) (*Service, error) {
 	return s, nil
 }
 
+// Run does run the service
+// Each relay is started and the service will wait
+// for them all to finish because finishing itself
 func (s *Service) Run() {
 	var wg sync.WaitGroup
 	wg.Add(len(s.relays))
@@ -57,14 +65,9 @@ func (s *Service) Run() {
 	wg.Wait()
 }
 
+// Stop does stop the service by stopping each relay
 func (s *Service) Stop() {
 	for _, v := range s.relays {
 		v.Stop()
 	}
-}
-
-type Relay interface {
-	Name() string
-	Run() error
-	Stop() error
 }
