@@ -13,7 +13,7 @@
 
 ## Overview
 
-Maintained  fork  of  [influxdb-relay][overview-href] originally  developed  by
+Maintained fork of [influxdb-relay][overview-href] originally developed by
 InfluxData. Replicate InfluxDB data for high availability.
 
 ## Description
@@ -87,15 +87,15 @@ docker run \
 
 ## Usage
 
-You can find more documentations in [docs](docs) folder.
+You can find more documentation in [docs](docs) folder.
 
-* [Architecture](architecture.md)
-* [Buffering](buffering.md)
-* [Caveats](caveats.md)
-* [Recovery](recovery.md)
-* [Sharding](sharding.md)
+* [Architecture](docs/architecture.md)
+* [Buffering](docs/buffering.md)
+* [Caveats](docs/caveats.md)
+* [Recovery](docs/recovery.md)
+* [Sharding](docs/sharding.md)
 
-You can find some configations in [examples](examples) folder.
+You can find some configurations in [examples](examples) folder.
 
 * [sample.conf](sample.conf)
 * [sample_buffered.conf](sample_buffered.conf)
@@ -168,9 +168,11 @@ The `type` parameter in the configuration file defaults to `influxdb`.
 
 So far, this is compatible with Debian, RedHat, and other derivatives.
 
+Moreover, the `type` parameter is not supported when it comes to UDP forwarding.
+
 ## Development
 
-Please read carefully [CONTRIBUTING.md][contribute-href]  before making a merge
+Please read carefully [CONTRIBUTING.md][contribute-href] before making a merge
 request.
 
 Clone repository into your `$GOPATH`.
