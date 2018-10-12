@@ -4,8 +4,8 @@
 
 Fork of [influxdb-relay](https://github.com/influxdata/influxdb-relay).
 
-This project adds  a basic high availability layer to  InfluxDB. With the right
-architecture and disaster recovery processes,  this achieves a highly available
+This project adds a basic high availability layer to InfluxDB. With the right
+architecture and disaster recovery processes, this achieves a highly available
 setup.
 
 *NOTE:* `influxdb-relay` must be built with Go 1.5+
@@ -34,6 +34,9 @@ name = "example-http"
 # TCP address to bind to, for HTTP server.
 bind-addr = "127.0.0.1:9096"
 
+# Ping response code, default is 204
+default-ping-response = 200
+
 # Enable HTTPS requests.
 ssl-combined-pem = "/etc/ssl/influxdb-relay.pem"
 
@@ -43,8 +46,11 @@ output = [
     # location: full URL of the /write endpoint of the backend
     # timeout: Go-parseable time duration. Fail writes if incomplete in this time.
     # skip-tls-verification: skip verification for HTTPS location. WARNING: it's insecure. Don't use in production.
+    # type: type of input source. OPTIONAL: see below for more information.
     { name="local1", location="http://127.0.0.1:8086/write", timeout="10s" },
     { name="local2", location="http://127.0.0.1:7086/write", timeout="10s" },
+    { name="local1_prom", location="http://127.0.0.1:8086/api/v1/prom/write", timeout="10s", type="prometheus" },
+    { name="local2_prom", location="http://127.0.0.1:7086/api/v1/prom/write", timeout="10s", type="prometheus" },
 ]
 
 [[udp]]
@@ -69,6 +75,17 @@ output = [
     { name="local2", location="127.0.0.1:7089", mtu=1024 },
 ]
 ```
+
+## Types
+
+InfluxDB Relay is able to forward from a variety of input sources, including:
+
+  * `influxdb`
+  * `prometheus`
+
+The `type` parameter in the configuration file defaults to `influxdb`.
+
+*NOTE:* Types are not supported in UDP.
 
 ## Description
 
