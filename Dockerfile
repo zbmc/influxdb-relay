@@ -35,7 +35,7 @@ RUN go get -u github.com/vente-privee/influxdb-relay && \
     mkdir /etc/influxdb-relay
 
 # Clean
-RUN rm -fr ${GOPATH}/src/github.com && \
+RUN rm -fr /go/src/github.com && \
     apk del git
 
 ENTRYPOINT [ "/usr/bin/influxdb-relay" ]
