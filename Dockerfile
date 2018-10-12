@@ -20,14 +20,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-FROM vpgrp/golang:latest
+FROM golang:alpine
 
 ENV TZ="Europe/Amsterdam"
 
+# Add missing git
+RUN apk update && \
+    apk upgrade && \
+    apk add git
+
 RUN go get -u github.com/vente-privee/influxdb-relay && \
-    cp /go/bin/influxdb-relay /usr/bin/influxdb-relay && \
+    mv /go/bin/influxdb-relay /usr/bin/influxdb-relay && \
     chmod 755 /usr/bin/influxdb-relay && \
     mkdir /etc/influxdb-relay
+
+# Clean
+RUN rm -fr ${GOPATH}/src/github.com && \
+    apk del git
 
 ENTRYPOINT [ "/usr/bin/influxdb-relay" ]
 
