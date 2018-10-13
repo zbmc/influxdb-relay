@@ -51,22 +51,17 @@ cp ${GOPATH}/src/github.com/vente-privee/influxdb-relay/examples/sample.conf \
 Build your own image.
 
 ```sh
-mkdir -p ${GOPATH}/src/github.com/vente-privee
-cd ${GOPATH}/src/github.com/vente-privee
 git clone git@github.com:vente-privee/influxdb-relay
+cd influxdb-relay
 docker build \
        --file Dockerfile \
        --rm \
-       --tag influxdb-relay-builder:latest \
+       --tag influxdb-relay:latest \
        .
-mkdir -p /etc/influxdb-relay
-cp ${GOPATH}/src/github.com/vente-privee/influxdb-relay/examples/sample.conf \
-   /etc/influxdb-relay/influxdb-relay.conf
-# Edit /etc/influxdb-relay/influxdb-relay.conf
 docker run \
-       --volume /etc/influxdb-relay/influxdb-relay.conf:/etc/influxdb-relay/influxdb-relay.conf
+       --volume /path/to/influxdb-relay.conf:/etc/influxdb-relay/influxdb-relay.conf
        --rm
-       influxdb-relay-builder:latest
+       influxdb-relay:latest
 ```
 
 or
@@ -74,15 +69,11 @@ or
 Docker pull our image.
 
 ```sh
-docker pull vptech/influxdb-relay-builder:latest
-mkdir -p /etc/influxdb-relay
-cp ${GOPATH}/src/github.com/vente-privee/influxdb-relay/examples/sample.conf \
-   /etc/influxdb-relay/influxdb-relay.conf
-Edit /etc/influxdb-relay/influxdb-relay.conf
+docker pull vptech/influxdb-relay:latest
 docker run \
-       --volume /etc/influxdb-relay/influxdb-relay.conf:/etc/influxdb-relay/influxdb-relay.conf
+       --volume /path/to/influxdb-relay.conf:/etc/influxdb-relay/influxdb-relay.conf
        --rm
-       vptech/nfluxdb-relay-builder:latest
+       vptech/influxdb-relay:latest
 ```
 
 ## Usage
@@ -97,9 +88,9 @@ You can find more documentation in [docs](docs) folder.
 
 You can find some configurations in [examples](examples) folder.
 
-* [sample.conf](sample.conf)
-* [sample_buffered.conf](sample_buffered.conf)
-* [kapacitor.conf](kapacitor.conf)
+* [sample.conf](examples/sample.conf)
+* [sample_buffered.conf](examples/sample_buffered.conf)
+* [kapacitor.conf](examples/kapacitor.conf)
 
 ### Configuration
 
