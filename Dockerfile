@@ -29,10 +29,12 @@ RUN apk update && \
     apk upgrade && \
     apk add git
 
+# Install
 RUN go get -u github.com/vente-privee/influxdb-relay && \
     mv /go/bin/influxdb-relay /usr/bin/influxdb-relay && \
     chmod 755 /usr/bin/influxdb-relay && \
-    mkdir /etc/influxdb-relay
+    mkdir /etc/influxdb-relay && \
+    touch /etc/influxdb-relay/influxdb-relay.conf
 
 # Clean
 RUN rm -fr /go/src/github.com && \
