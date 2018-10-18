@@ -121,8 +121,8 @@ output = [
     { name="local-influxdb02", location="http://127.0.0.1:7086/write", timeout="10s", type="influxdb" },
 
     # Prometheus
-    { name="local-prometheus01", location="http://127.0.0.1:9090/api/v1/prom/write", timeout="10s", type="prometheus" },
-    { name="local-prometheus02", location="http://127.0.0.1:8090/api/v1/prom/write", timeout="10s", type="prometheus" },
+    { name="local-influxdb03", location="http://127.0.0.1:6086/api/v1/prom/write", timeout="10s", type="prometheus" },
+    { name="local-influxdb05", location="http://127.0.0.1:5086/api/v1/prom/write", timeout="10s", type="prometheus" },
 ]
 
 [[udp]]
