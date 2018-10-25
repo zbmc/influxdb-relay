@@ -3,7 +3,6 @@ package relay
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -111,8 +110,10 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 			resp, err := b.post(outBytes, query, authHeader)
 			if err != nil {
 				log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
+
+				responses <- &responseData{}
 			} else {
-				if resp.StatusCode/100 == 5 {
+				if resp.StatusCode / 100 == 5 {
 					log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
 				}
 				responses <- resp
@@ -135,19 +136,19 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 			return
 
 		case 4:
-			// user error
+			// User error
 			resp.Write(w)
 			return
 
 		default:
-			// hold on to one of the responses to return back to the client
-			errResponse = resp
+			// Hold on to one of the responses to return back to the client
+			errResponse = nil
 		}
 	}
 
-	// no successful writes
+	// No successful writes
 	if errResponse == nil {
-		// failed to make any valid request...
+		// Failed to make any valid request...
 		jsonResponse(w, response{http.StatusServiceUnavailable, "unable to write points"})
 		return
 	}
@@ -168,6 +169,16 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 
 	authHeader := r.Header.Get("Authorization")
 
+	bodyBuf := getBuf()
+	_, err := bodyBuf.ReadFrom(r.Body)
+	if err != nil {
+		putBuf(bodyBuf)
+		jsonResponse(w, response{http.StatusInternalServerError, "problem reading request body"})
+		return
+	}
+
+	outBytes := bodyBuf.Bytes()
+
 	var wg sync.WaitGroup
 	wg.Add(len(h.backends))
 
@@ -178,16 +189,19 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 		if b.inputType != config.TypePrometheus {
 			continue
 		}
+
 		go func() {
 			defer wg.Done()
-			content, _ := ioutil.ReadAll(r.Body)
-			resp, err := b.post(content, r.URL.RawQuery, authHeader)
+			resp, err := b.post(outBytes, r.URL.RawQuery, authHeader)
 			if err != nil {
 				log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
+
+				responses <- &responseData{}
 			} else {
-				if resp.StatusCode/100 == 5 {
+				if resp.StatusCode / 100 == 5 {
 					log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
 				}
+
 				responses <- resp
 			}
 		}()
@@ -196,6 +210,7 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		wg.Wait()
 		close(responses)
+		putBuf(bodyBuf)
 	}()
 
 	var errResponse *responseData
@@ -207,19 +222,19 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 			return
 
 		case 4:
-			// user error
+			// User error
 			resp.Write(w)
 			return
 
 		default:
-			// hold on to one of the responses to return back to the client
-			errResponse = resp
+			// Hold on to one of the responses to return back to the client
+			errResponse = nil
 		}
 	}
 
-	// no successful writes
+	// No successful writes
 	if errResponse == nil {
-		// failed to make any valid request...
+		// Failed to make any valid request...
 		jsonResponse(w, response{http.StatusServiceUnavailable, "unable to write points"})
 		return
 	}
