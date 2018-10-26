@@ -4,6 +4,7 @@
 stages:
   - linter
   - build
+  - pages
 
 # linter
 dockerlint:
