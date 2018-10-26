@@ -103,8 +103,10 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	for _, b := range h.backends {
 		b := b
 		if b.inputType != config.TypeInfluxdb {
+			wg.Done()
 			continue
 		}
+
 		go func() {
 			defer wg.Done()
 			resp, err := b.post(outBytes, query, authHeader)
@@ -187,6 +189,7 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 	for _, b := range h.backends {
 		b := b
 		if b.inputType != config.TypePrometheus {
+			wg.Done()
 			continue
 		}
 
