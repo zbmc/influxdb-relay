@@ -28,7 +28,7 @@ docker-build:
   services:
     - docker:dind
   variables:
-    - DOCKER_DRIVER: overlay
+    DOCKER_DRIVER: overlay
   script:
     - docker build --rm .
 
