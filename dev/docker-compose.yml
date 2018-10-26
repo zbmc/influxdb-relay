@@ -17,7 +17,7 @@ services:
 
   relay:
     build:
-      context: ../
+      context: .
       dockerfile: Dockerfile.develop
     ports:
       - "9096:9096"
