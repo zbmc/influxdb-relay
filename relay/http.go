@@ -147,7 +147,6 @@ func (h *HTTP) Run() error {
 
 	log.Printf("Starting %s relay %q on %v", strings.ToUpper(h.schema), h.Name(), h.addr)
 
-	// TODO: Comment this block
 	err = http.Serve(l, h)
 	if atomic.LoadInt64(&h.closing) != 0 {
 		return nil
@@ -163,7 +162,6 @@ func (h *HTTP) Stop() error {
 
 // ServeHTTP is the function that handles the different route
 // The response is a JSON object describing the state of the operation
-// TODO: Formalize JSON return value into a structure
 func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.start = time.Now()
 
