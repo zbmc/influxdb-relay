@@ -28,7 +28,7 @@ docker-build:
   services:
     - docker:dind
   variables:
-    DOCKER_DRIVER: overlay
+    - DOCKER_DRIVER: overlay
   script:
     - docker build --rm .
 
@@ -53,8 +53,8 @@ pages:
     - env REPO_NAME=$CI_PROJECT_NAME build-pages
   artifacts:
     paths:
-    - public
+      - public
   only:
-  - add-vpage
+    - add-vpage
 
 # EOF
