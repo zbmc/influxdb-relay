@@ -23,3 +23,6 @@ a few scenarios that need to be accounted for:
     to data differences.
   - This  could potentially  be mitigated  by waiting for  the buffer  to flush
     before opening writes back up to being passed-through.
+- When using Prometheus as an input source, the buffering features will not
+  work. This means that the data written by Prometheus will be lost if one
+  or more targets go down.
