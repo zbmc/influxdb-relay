@@ -22,9 +22,12 @@ This project adds a basic high availability layer to InfluxDB. With the right
 architecture and disaster recovery processes, this achieves a highly available
 setup.
 
-## Requirements
+## Tested on
 
-- [Go](https://golang.org/doc/install) 1.8+
+- [Go](https://golang.org/doc/install) 1.7.4 to 1.11.2
+- [InfluxDB](https://docs.influxdata.com/influxdb/v1.6/introduction/installation/) 1.6.4 to 1.7
+
+Other versions will probably work but are untested.
 
 ## Setup
 
