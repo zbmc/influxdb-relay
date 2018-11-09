@@ -4,6 +4,7 @@
 stages:
   - linter
   - build
+  - pages
 
 # linter
 dockerlint:
@@ -40,4 +41,20 @@ go-build:
   script:
     - cd ${GOPATH}/src/github.com/vente-privee/influxdb-relay
     - go build -a -ldflags '-extldflags "-static"' -o influxdb-relay
+
+
+# vpage
+pages:
+  stage: pages
+  tags:
+    - docker
+  image: vptech/vpages:latest
+  script:
+    - env REPO_NAME=$CI_PROJECT_NAME build-pages
+  artifacts:
+    paths:
+      - public
+  only:
+    - add-vpage
+
 # EOF
