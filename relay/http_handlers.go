@@ -40,6 +40,100 @@ func (h *HTTP) handlePing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
+	// Client to perform the raw queries
+	client := http.Client{}
+
+	if r.Method == http.MethodPost {
+		// Responses
+		var responses = make(chan *http.Response, len(h.backends))
+
+		// Associated waitgroup
+		var wg sync.WaitGroup
+		wg.Add(len(h.backends))
+
+		// Iterate over all backends
+		for _, b := range h.backends {
+			b := b
+
+			if b.admin == "" {
+				// Empty query, skip backend
+				wg.Done()
+				continue
+			}
+
+			go func() {
+				defer wg.Done()
+
+				// Create new request
+				// Update location according to backend
+				// Forward body
+				req, err := http.NewRequest("POST", b.admin, r.Body)
+				if err != nil {
+					jsonResponse(w, response{http.StatusServiceUnavailable, "could not prepare request: " + err.Error()})
+				}
+
+				// Forward headers
+				req.Header = r.Header
+
+				// Forward the request
+				resp, err := client.Do(req)
+				if err != nil {
+					// Internal error
+					log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
+
+					// So empty response
+					responses <- &http.Response{}
+				} else {
+					if resp.StatusCode / 100 == 5 {
+						// HTTP error
+						log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
+					}
+
+					// Get response
+					responses <- resp
+				}
+			}()
+		}
+
+		// Wait for requests
+		go func() {
+			wg.Wait()
+			close(responses)
+		}()
+
+		var errResponse *responseData
+		for resp := range responses {
+			switch resp.StatusCode / 100 {
+			case 2:
+				w.WriteHeader(http.StatusNoContent)
+				return
+
+			case 4:
+				// User error
+				resp.Write(w)
+				return
+
+			default:
+				// Hold on to one of the responses to return back to the client
+				errResponse = nil
+			}
+		}
+
+		// No successful writes
+		if errResponse == nil {
+			// Failed to make any valid request...
+			jsonResponse(w, response{http.StatusServiceUnavailable, "unable to forward query"})
+			return
+		}
+
+		errResponse.Write(w)
+	} else { // Bad method
+		jsonResponse(w, response{http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed)})
+		return
+	}
+}
+
 func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"errors"
+	"net/url"
 	"os"
 
 	"github.com/naoina/toml"
@@ -42,6 +44,10 @@ type HTTPOutputConfig struct {
 
 	// Location should be set to the URL of the backend server's write endpoint
 	Location string `toml:"location"`
+
+	// Query should be set to the URL of the backend server's query endpoint
+	// This is used for database creation through relay
+	Admin string `toml:"admin"`
 
 	// Timeout sets a per-backend timeout for write requests (default: 10s)
 	// The format used is the same seen in time.ParseDuration
@@ -112,6 +118,11 @@ func LoadConfigFile(filename string) (Config, error) {
 			for indexB, backend := range relay.Outputs {
 				if backend.InputType == "" {
 					cfg.HTTPRelays[index].Outputs[indexB].InputType = TypeInfluxdb
+				}
+
+				_, err := url.Parse(backend.Admin)
+				if err != nil {
+					return cfg, errors.New("invalid query parameter for backend " + backend.Name)
 				}
 			}
 		}

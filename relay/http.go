@@ -60,6 +60,7 @@ var (
 		"/api/v1/prom/write": (*HTTP).handleProm,
 		"/ping":              (*HTTP).handlePing,
 		"/status":            (*HTTP).handleStatus,
+		"/admin":             (*HTTP).handleAdmin,
 	}
 
 	middlewares = []relayMiddleware{
@@ -278,6 +279,7 @@ type httpBackend struct {
 	poster
 	name      string
 	inputType config.Input
+	admin     string
 }
 
 func newHTTPBackend(cfg *config.HTTPOutputConfig) (*httpBackend, error) {
@@ -321,6 +323,7 @@ func newHTTPBackend(cfg *config.HTTPOutputConfig) (*httpBackend, error) {
 		poster:    p,
 		name:      cfg.Name,
 		inputType: cfg.InputType,
+		admin:     cfg.Admin,
 	}, nil
 }
 

@@ -112,6 +112,7 @@ ssl-combined-pem = "/path/to/influxdb-relay.pem"
 output = [
     # name: name of the backend, used for display purposes only.
     # location: full URL of the /write endpoint of the backend
+    # admin: full URL of the /query endpoint of the backend. OPTIONAL.
     # timeout: Go-parseable time duration. Fail writes if incomplete in this time.
     # skip-tls-verification: skip verification for HTTPS location. WARNING: it's insecure. Don't use in production.
     # type: type of input source. OPTIONAL: see below for more information.
@@ -154,6 +155,43 @@ InfluxDB Relay is able to forward from a variety of input sources, including:
 * `prometheus`
 
 The `type` parameter in the configuration file defaults to `influxdb`.
+
+### Administrative tasks
+
+Whereas data manipulation relies on the `/write` endpoint, some other features
+such as database or user management are based on the `/query` endpoint. As
+InfluxDB Relay does not send back a response body to the client(s), we are not
+able to forward all of the features this endpoint provides. Still, we decided
+to expose it through the `/admin` route.
+
+In order to use it, one shall define the optional `admin` parameter of the
+target backend(s) in the configuration file, as follows:
+
+```toml
+[[http]]
+# Name of the HTTP server, used for display purposes only.
+name = "expose-database-creation"
+
+# TCP address to bind to, for HTTP server.
+bind-addr = "127.0.0.1:9096"
+
+# Array of InfluxDB instances to use as backends for Relay.
+output = [
+    # InfluxDB
+    { name="local-influxdb01", location="http://127.0.0.1:8086/write", admin="http://127.0.0.1:8086/query", type="influxdb" },
+    { name="local-influxdb02", location="http://127.0.0.1:7086/write", admin="http://127.0.0.1:7086/query", type="influxdb" },
+]
+```
+
+It is now possible to query the `/admin` endpoint. Its usage is the same as the
+standard `/query` Influx DB enpoint:
+
+```
+curl -X POST "http://127.0.0.1:9096/admin" --data-urlencode 'q=CREATE DATABASE some_database'
+```
+
+Errors will be logged just like regular `/write` queries. The HTTP response
+bodies will not be forwarded back to the clients.
 
 ## Limitations
 
