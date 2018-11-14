@@ -2,7 +2,6 @@ package relay
 
 import (
 	"compress/gzip"
-	"log"
 	"net/http"
 )
 
@@ -18,7 +17,7 @@ func allMiddlewares(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc {
 func (h *HTTP) logMiddleWare(next relayHandlerFunc) relayHandlerFunc {
 	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request) {
 		if h.log {
-			log.Println("Got request on: " + r.URL.Path)
+			h.logger.Println("Got request on: " + r.URL.Path)
 		}
 		next(h, w, r)
 	})
@@ -32,6 +31,7 @@ func (h *HTTP) bodyMiddleWare(next relayHandlerFunc) relayHandlerFunc {
 			b, err := gzip.NewReader(r.Body)
 			if err != nil {
 				jsonResponse(w, response{http.StatusBadRequest, "unable to decode gzip body"})
+				return
 			}
 			defer b.Close()
 			body = b
