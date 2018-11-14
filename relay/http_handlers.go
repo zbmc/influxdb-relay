@@ -33,7 +33,7 @@ func (h *HTTP) handlePing(w http.ResponseWriter, r *http.Request) {
 		for key, value := range h.pingResponseHeaders {
 			w.Header().Add(key, value)
 		}
-		w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(h.pingResponseCode)
 	} else {
 		jsonResponse(w, response{http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed)})
 		return
@@ -209,7 +209,7 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 
 				responses <- &responseData{}
 			} else {
-				if resp.StatusCode / 100 == 5 {
+				if resp.StatusCode/100 == 5 {
 					log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
 				}
 				responses <- resp
@@ -295,7 +295,7 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 
 				responses <- &responseData{}
 			} else {
-				if resp.StatusCode / 100 == 5 {
+				if resp.StatusCode/100 == 5 {
 					log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
 				}
 

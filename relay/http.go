@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,8 +37,9 @@ type HTTP struct {
 
 	backends []*httpBackend
 
-	start time.Time
-	log   bool
+	start  time.Time
+	log    bool
+	logger *log.Logger
 }
 
 type relayHandlerFunc func(h *HTTP, w http.ResponseWriter, r *http.Request)
@@ -79,6 +81,9 @@ func NewHTTP(cfg config.HTTPConfig, verbose bool) (Relay, error) {
 	h.addr = cfg.Addr
 	h.name = cfg.Name
 	h.log = verbose
+	if verbose {
+		h.logger = log.New(os.Stdout, "", 0)
+	}
 
 	h.pingResponseCode = DefaultHTTPPingResponse
 	if cfg.DefaultPingResponse != 0 {
@@ -88,7 +93,7 @@ func NewHTTP(cfg config.HTTPConfig, verbose bool) (Relay, error) {
 	h.pingResponseHeaders = make(map[string]string)
 	h.pingResponseHeaders["X-InfluxDB-Version"] = "relay"
 	if h.pingResponseCode != http.StatusNoContent {
-		h.pingResponseHeaders["Content-Lenght"] = "0"
+		h.pingResponseHeaders["Content-Length"] = "0"
 	}
 
 	h.cert = cfg.SSLCombinedPem
@@ -206,7 +211,7 @@ func jsonResponse(w http.ResponseWriter, r response) {
 	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
 	w.WriteHeader(r.code)
 
-	w.Write([]byte(data))
+	_, _ = w.Write(data)
 }
 
 type poster interface {

@@ -17,7 +17,7 @@ const (
 
 var (
 	usage = func() {
-		fmt.Println("Please, see README for more information about InfluxDB Relay...\n")
+		fmt.Println("Please, see README for more information about InfluxDB Relay...")
 		flag.PrintDefaults()
 	}
 
