@@ -85,7 +85,7 @@ func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
 					// So empty response
 					responses <- &http.Response{}
 				} else {
-					if resp.StatusCode / 100 == 5 {
+					if resp.StatusCode/100 == 5 {
 						// HTTP error
 						log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
 					}
