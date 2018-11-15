@@ -226,6 +226,13 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	var errResponse *responseData
 
 	for resp := range responses {
+		// Status accepted means buffering,
+		// we can handle it early
+		if resp.StatusCode == http.StatusAccepted {
+			w.WriteHeader(http.StatusAccepted)
+			return
+		}
+
 		switch resp.StatusCode / 100 {
 		case 2:
 			w.WriteHeader(http.StatusNoContent)
