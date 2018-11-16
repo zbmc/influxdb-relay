@@ -72,16 +72,13 @@ func (r *retryBuffer) post(buf []byte, query string, auth string) (*responseData
 
 	// already buffering or failed request
 	_, err := r.list.add(buf, query, auth)
-	if err != nil {
-		return nil, err
-	}
 
 	// batch.wg.Wait()
 	// We do not wait for the WaitGroup because we don't want
 	// to leave the connection open
 	//.The client will receive a 202 which closes the connection and
 	// invites him to send further requests
-	return &responseData{StatusCode: http.StatusAccepted}, nil
+	return &responseData{StatusCode: http.StatusAccepted}, err
 }
 
 func (r *retryBuffer) run() {
