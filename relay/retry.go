@@ -2,6 +2,7 @@ package relay
 
 import (
 	"bytes"
+	"net/http"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -61,21 +62,26 @@ func (r *retryBuffer) getStats() map[string]string {
 func (r *retryBuffer) post(buf []byte, query string, auth string) (*responseData, error) {
 	if atomic.LoadInt32(&r.buffering) == 0 {
 		resp, err := r.p.post(buf, query, auth)
-		// TODO A 5xx caused by the point data could cause the relay to buffer forever
+		// TODO: A 5xx caused by the point data could cause the relay to buffer forever
 		if err == nil && resp.StatusCode/100 != 5 {
 			return resp, err
 		}
+
 		atomic.StoreInt32(&r.buffering, 1)
 	}
 
 	// already buffering or failed request
-	batch, err := r.list.add(buf, query, auth)
+	_, err := r.list.add(buf, query, auth)
 	if err != nil {
 		return nil, err
 	}
 
-	batch.wg.Wait()
-	return batch.resp, nil
+	// batch.wg.Wait()
+	// We do not wait for the WaitGroup because we don't want
+	// to leave the connection open
+	//.The client will receive a 202 which closes the connection and
+	// invites him to send further requests
+	return &responseData{StatusCode: http.StatusAccepted}, nil
 }
 
 func (r *retryBuffer) run() {
