@@ -214,15 +214,18 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	var errResponse *responseData
 
 	for resp := range responses {
-		// Status accepted means buffering,
-		// we can handle it early
-		if resp.StatusCode == http.StatusAccepted {
-			w.WriteHeader(http.StatusAccepted)
-			return
-		}
 
 		switch resp.StatusCode / 100 {
 		case 2:
+			// Status accepted means buffering,
+			if resp.StatusCode == http.StatusAccepted {
+				if h.log {
+					h.logger.Printf("Could not reach relay %q, buffering...", h.Name())
+				}
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+
 			w.WriteHeader(http.StatusNoContent)
 			return
 
@@ -301,8 +304,18 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 	var errResponse *responseData
 
 	for resp := range responses {
+
 		switch resp.StatusCode / 100 {
 		case 2:
+			// Status accepted means buffering,
+			if resp.StatusCode == http.StatusAccepted {
+				if h.log {
+					h.logger.Printf("Could not reach relay %q, buffering...", h.Name())
+				}
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+
 			w.WriteHeader(http.StatusNoContent)
 			return
 

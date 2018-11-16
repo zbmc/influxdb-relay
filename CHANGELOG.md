@@ -17,3 +17,13 @@ Jun 30 2018 Antoine MILLET <amillet@vente-privee.com>
 	* Merge https://github.com/influxdata/influxdb-relay/pull/59
 	* Merge https://github.com/influxdata/influxdb-relay/pull/43
 	* Merge https://github.com/influxdata/influxdb-relay/pull/57
+
+Nov 15 2018 Maxime CORBIN <mcorbin@vente-privee.com>
+    * Add Prometheus input support
+    * Add `/admin` route to administrate underlying databases
+    * Add code coverage / unit tests
+    * Code refactor
+    * Improve buffering feature avoiding connexions hanging
+    * Improve `/ping` route
+    * Improve logging
+    * Add `-version` option
