@@ -3,9 +3,6 @@
 While `influxdb-relay` does provide some  level of high availability, there are
 a few scenarios that need to be accounted for:
 
-- `influxdb-relay`  will  not relay  the `/query`  endpoint, and  this includes
-  schema  modification  (create  database,   `DROP`s,  etc).  This  means  that
-  databases must be created before points are written to the backends.
 - Continuous queries  will still only write their results  locally. If a server
   goes down, the continuous query will have to be backfilled after the data has
   been recovered for that instance.
@@ -23,6 +20,6 @@ a few scenarios that need to be accounted for:
     to data differences.
   - This  could potentially  be mitigated  by waiting for  the buffer  to flush
     before opening writes back up to being passed-through.
-- When using Prometheus as an input source, the buffering features will not
-  work. This means that the data written by Prometheus will be lost if one
-  or more targets go down.
+- When a request is buffered, the client recieves a `202` HTTP response
+  indicating that his request will be fullfilled later. So the client will
+  never reveive the response of the actual request.
