@@ -176,7 +176,7 @@ func TestQueryMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	url, err := r.URL.Parse("http://influxdb:8086/write?db=mydb")
+	url, _ := r.URL.Parse("http://influxdb:8086/write?db=mydb")
 	r.URL = url
 	handler(h, w, r)
 	assert.Equal(t, emptyWriter, w)
@@ -191,7 +191,7 @@ func TestQueryMiddlewareNoDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	url, err := r.URL.Parse("http://influxdb:8086/write")
+	url, _ := r.URL.Parse("http://influxdb:8086/write")
 	r.URL = url
 	handler(h, w, r)
 	WriterTest(t, errorDbWriter, w)
@@ -206,7 +206,7 @@ func TestQueryMiddlewareRp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	url, err := r.URL.Parse("http://influxdb:8086/write?db=mydb")
+	url, _ := r.URL.Parse("http://influxdb:8086/write?db=mydb")
 	r.URL = url
 	handler(h, w, r)
 	assert.Equal(t, emptyWriter, w)

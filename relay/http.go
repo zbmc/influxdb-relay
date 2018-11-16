@@ -132,6 +132,7 @@ func (h *HTTP) Name() string {
 
 // Run actually launch the HTTP endpoint
 func (h *HTTP) Run() error {
+	var cert tls.Certificate
 	l, err := net.Listen("tcp", h.addr)
 	if err != nil {
 		return err
@@ -139,7 +140,7 @@ func (h *HTTP) Run() error {
 
 	// support HTTPS
 	if h.cert != "" {
-		cert, err := tls.LoadX509KeyPair(h.cert, h.cert)
+		cert, err = tls.LoadX509KeyPair(h.cert, h.cert)
 		if err != nil {
 			return err
 		}

@@ -120,7 +120,7 @@ func LoadConfigFile(filename string) (Config, error) {
 					cfg.HTTPRelays[index].Outputs[indexB].InputType = TypeInfluxdb
 				}
 
-				_, err := url.Parse(backend.Admin)
+				_, err = url.Parse(backend.Admin)
 				if err != nil {
 					return cfg, errors.New("invalid query parameter for backend " + backend.Name)
 				}

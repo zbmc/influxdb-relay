@@ -50,7 +50,7 @@ func NewUDP(config config.UDPConfig) (Relay, error) {
 	}
 
 	if config.ReadBuffer != 0 {
-		if err := ul.SetReadBuffer(config.ReadBuffer); err != nil {
+		if err = ul.SetReadBuffer(config.ReadBuffer); err != nil {
 			return nil, err
 		}
 	}
