@@ -70,7 +70,9 @@ func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
 				// Forward body
 				req, err := http.NewRequest("POST", b.admin, r.Body)
 				if err != nil {
-					jsonResponse(w, response{http.StatusServiceUnavailable, "could not prepare request: " + err.Error()})
+					log.Printf("Problem posting to relay %q backend %q: could not prepare request: %v", h.Name(), b.name, err)
+					responses <- &http.Response{}
+					return
 				}
 
 				// Forward headers
@@ -127,8 +129,8 @@ func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		errResponse.Write(w)
 	} else { // Bad method
+		w.Header().Set("Allow", http.MethodPost)
 		jsonResponse(w, response{http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed)})
 		return
 	}
@@ -147,12 +149,7 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 
 	queryParams := r.URL.Query()
 	bodyBuf := getBuf()
-	_, err := bodyBuf.ReadFrom(r.Body)
-	if err != nil {
-		putBuf(bodyBuf)
-		jsonResponse(w, response{http.StatusInternalServerError, "problem reading request body"})
-		return
-	}
+	_, _ = bodyBuf.ReadFrom(r.Body)
 
 	precision := queryParams.Get("precision")
 	points, err := models.ParsePointsWithPrecision(bodyBuf.Bytes(), h.start, precision)
@@ -164,22 +161,13 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 
 	outBuf := getBuf()
 	for _, p := range points {
-		if _, err = outBuf.WriteString(p.PrecisionString(precision)); err != nil {
-			break
-		}
-		if err = outBuf.WriteByte('\n'); err != nil {
-			break
-		}
+		// Those two functions never return any errors, let's just ignore the return value
+		_, _ = outBuf.WriteString(p.PrecisionString(precision))
+		_ = outBuf.WriteByte('\n')
 	}
 
 	// done with the input points
 	putBuf(bodyBuf)
-
-	if err != nil {
-		putBuf(outBuf)
-		jsonResponse(w, response{http.StatusInternalServerError, "problem writing points"})
-		return
-	}
 
 	// normalize query string
 	query := queryParams.Encode()
@@ -255,8 +243,6 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, response{http.StatusServiceUnavailable, "unable to write points"})
 		return
 	}
-
-	errResponse.Write(w)
 }
 
 func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
@@ -273,12 +259,7 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 
 	bodyBuf := getBuf()
-	_, err := bodyBuf.ReadFrom(r.Body)
-	if err != nil {
-		putBuf(bodyBuf)
-		jsonResponse(w, response{http.StatusInternalServerError, "problem reading request body"})
-		return
-	}
+	_, _ = bodyBuf.ReadFrom(r.Body)
 
 	outBytes := bodyBuf.Bytes()
 
@@ -342,6 +323,4 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 		jsonResponse(w, response{http.StatusServiceUnavailable, "unable to write points"})
 		return
 	}
-
-	errResponse.Write(w)
 }
