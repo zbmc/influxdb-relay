@@ -205,8 +205,8 @@ var (
 	}
 	AdminWriterClientError = &ResponseWriter{
 		writeBuf: bytes.NewBuffer([]byte("HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n")),
-		header: http.Header{},
-		code: http.StatusServiceUnavailable,
+		header:   http.Header{},
+		code:     http.StatusServiceUnavailable,
 	}
 	AdminWriterWrongURL = &ResponseWriter{
 		writeBuf: bytes.NewBuffer([]byte(`"unable to forward query"`)),
