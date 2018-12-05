@@ -10,11 +10,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/vente-privee/influxdb-relay/config"
 )
 
 var (
+	ti = time.Now()
 	promBody   = Body{}
 	influxBody = Body{}
 	adminBody  = Body{}
@@ -87,13 +89,16 @@ var (
 	}
 	BackendUpPromWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{},
+		header:   http.Header{
+			"Content-Type": []string{"text/plain"},
+		},
 		code:     http.StatusNoContent,
 	}
 	BackendUpPromError400Writer = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
 		header: http.Header{
 			"Content-Length": []string{"0"},
+			"Content-Type": []string{"text/plain"},
 		},
 		code: http.StatusBadRequest,
 	}
@@ -134,13 +139,16 @@ var (
 	}
 	BackendUpInfluxWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{},
+		header:   http.Header{
+			"Content-Type": []string{"text/plain"},
+		},
 		code:     http.StatusNoContent,
 	}
 	BackendUpInfluxError400Writer = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
 		header: http.Header{
 			"Content-Length": []string{"0"},
+			"Content-Type": []string{"text/plain"},
 		},
 		code: http.StatusBadRequest,
 	}
@@ -162,7 +170,9 @@ var (
 	}
 	InfluxParsePointWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{},
+		header:   http.Header{
+			"Content-Type": []string{"text/plain"},
+		},
 		code:     http.StatusNoContent,
 	}
 	AdminWriter = &ResponseWriter{
@@ -257,11 +267,11 @@ func TestMain(m *testing.M) {
 	ValidServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusOK)
 	}))
-
-	m.Run()
 	defer Error500.Close()
 	defer Error400.Close()
 	defer ValidServer.Close()
+
+	m.Run()
 }
 
 func TestHandlePingSimple(t *testing.T) {
@@ -272,7 +282,7 @@ func TestHandlePingSimple(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handlePing(w, r)
+	h.handlePing(w, r, ti)
 	WriterTest(t, basicPingWriter, w)
 }
 
@@ -284,7 +294,7 @@ func TestHandlePingTeapot(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handlePing(w, r)
+	h.handlePing(w, r, ti)
 	WriterTest(t, teapotPingWriter, w)
 }
 
@@ -296,7 +306,7 @@ func TestHandlePingWrongMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handlePing(w, r)
+	h.handlePing(w, r, ti)
 	WriterTest(t, wrongMethodPingWriter, w)
 }
 
@@ -310,7 +320,7 @@ func TestHandleStatusSimple(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOut)
 	h.backends = append(h.backends, b)
-	h.handleStatus(w, r)
+	h.handleStatus(w, r, ti)
 	WriterTest(t, basicStatusWriter, w)
 	h.backends = h.backends[:0]
 }
@@ -323,7 +333,7 @@ func TestHandleStatusWrongMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleStatus(w, r)
+	h.handleStatus(w, r, ti)
 	WriterTest(t, wrongMethodStatusWriter, w)
 }
 
@@ -335,7 +345,7 @@ func TestHandlePromWrongMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleProm(w, r)
+	h.handleProm(w, r, ti)
 	WriterTest(t, wrongMethodPromWriter, w)
 }
 
@@ -348,7 +358,7 @@ func TestHandlePromWrongBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleProm(w, r)
+	h.handleProm(w, r, ti)
 	WriterTest(t, wrongBackendPromWriter, w)
 }
 
@@ -367,7 +377,7 @@ func TestHandlePromBackendDown(t *testing.T) {
 	h.backends = append(h.backends, b)
 	h.backends = append(h.backends, b2)
 	output := captureOutput(func() {
-		h.handleProm(w, r)
+		h.handleProm(w, r, ti)
 	})
 	output = output[20:]
 	assert.Equal(t, "Problem posting to relay \"http://\" backend \"test_prometheus\": Post : unsupported protocol scheme \"\"\n", output)
@@ -387,7 +397,7 @@ func TestHandlePromBackendUp(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleProm(w, r)
+	h.handleProm(w, r, ti)
 	WriterTest(t, BackendUpPromWriter, w)
 	h.backends = h.backends[:0]
 }
@@ -404,7 +414,7 @@ func TestHandlePromBackendUpError400(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleProm(w, r)
+	h.handleProm(w, r, ti)
 	WriterTest(t, BackendUpPromError400Writer, w)
 	h.backends = h.backends[:0]
 }
@@ -421,7 +431,7 @@ func TestHandlePromBackendUpError500(t *testing.T) {
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
 	output := captureOutput(func() {
-		h.handleProm(w, r)
+		h.handleProm(w, r, ti)
 	})
 	output = output[20:]
 	assert.Equal(t, `5xx response for relay "http://" backend "test_prometheus": 500
@@ -438,7 +448,7 @@ func TestHandleInfluxWrongMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, wrongMethodInfluxWriter, w)
 }
 
@@ -451,7 +461,7 @@ func TestHandleInfluxWrongBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, wrongBackendInfluxWriter, w)
 }
 
@@ -470,7 +480,7 @@ func TestHandleInfluxBackendDown(t *testing.T) {
 	h.backends = append(h.backends, b)
 	h.backends = append(h.backends, b2)
 	output := captureOutput(func() {
-		h.handleStandard(w, r)
+		h.handleStandard(w, r, ti)
 	})
 	output = output[20:]
 	assert.Equal(t, `Problem posting to relay "http://" backend "test_influx": Post : unsupported protocol scheme ""
@@ -490,7 +500,7 @@ func TestHandleInfluxBackendUp(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, BackendUpInfluxWriter, w)
 	h.backends = h.backends[:0]
 }
@@ -507,7 +517,7 @@ func TestHandleInfluxBackendUpError400(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, BackendUpInfluxError400Writer, w)
 	h.backends = h.backends[:0]
 }
@@ -525,7 +535,7 @@ func TestHandleInfluxBackendUpError500(t *testing.T) {
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
 	output := captureOutput(func() {
-		h.handleStandard(w, r)
+		h.handleStandard(w, r, ti)
 	})
 	output = output[20:]
 	assert.Equal(t, `5xx response for relay "http://" backend "test_influx": 500
@@ -546,7 +556,7 @@ func TestHandleInfluxFailParsePoint(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, InfluxFailParsePointWriter, w)
 	h.backends = h.backends[:0]
 }
@@ -563,7 +573,7 @@ func TestHandleInfluxParsePoint(t *testing.T) {
 	}
 	b, _ := newHTTPBackend(&cfgOutProm)
 	h.backends = append(h.backends, b)
-	h.handleStandard(w, r)
+	h.handleStandard(w, r, ti)
 	WriterTest(t, InfluxParsePointWriter, w)
 	h.backends = h.backends[:0]
 }
@@ -582,7 +592,7 @@ func TestAdmin(t *testing.T) {
 
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriter, w)
 }
 
@@ -596,7 +606,7 @@ func TestAdminNoBackends(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterNoBackEnds, w)
 }
 
@@ -614,7 +624,7 @@ func TestAdminNoAdminBackends(t *testing.T) {
 
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterNoAdminBackEnds, w)
 }
 
@@ -627,7 +637,7 @@ func TestAdminBadMethod(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterWrongMethod, w)
 }
 
@@ -645,7 +655,7 @@ func TestAdminBadURL(t *testing.T) {
 
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterWrongURL, w)
 }
 
@@ -663,7 +673,7 @@ func TestAdminUnreachableURL(t *testing.T) {
 
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterUnreachableURL, w)
 }
 
@@ -682,7 +692,7 @@ func TestAdminErrorServer(t *testing.T) {
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
 
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	WriterTest(t, AdminWriterServerError, w)
 }
 
@@ -701,7 +711,7 @@ func TestAdminErrorClient(t *testing.T) {
 	b, _ := newHTTPBackend(&cfg)
 	h.backends = append(h.backends, b)
 
-	h.handleAdmin(w, r)
+	h.handleAdmin(w, r, ti)
 	buf, _ := ioutil.ReadAll(w.writeBuf)
 	buf2, _ := ioutil.ReadAll(AdminWriterClientError.writeBuf)
 	assert.Equal(t, buf[:43], buf2[:43])

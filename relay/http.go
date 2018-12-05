@@ -42,7 +42,8 @@ type HTTP struct {
 	logger *log.Logger
 }
 
-type relayHandlerFunc func(h *HTTP, w http.ResponseWriter, r *http.Request)
+
+type relayHandlerFunc func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time)
 type relayMiddleware func(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc
 
 // Default HTTP settings and a few constants
@@ -170,10 +171,10 @@ func (h *HTTP) Stop() error {
 // ServeHTTP is the function that handles the different route
 // The response is a JSON object describing the state of the operation
 func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.start = time.Now()
+	//h.start = time.Now()
 
 	if fun, ok := handlers[r.URL.Path]; ok {
-		allMiddlewares(h, fun)(h, w, r)
+		allMiddlewares(h, fun)(h, w, r, time.Now())
 	} else {
 		jsonResponse(w, response{http.StatusNotFound, http.StatusText(http.StatusNotFound)})
 		return

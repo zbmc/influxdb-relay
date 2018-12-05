@@ -3,6 +3,7 @@ package relay
 import (
 	"compress/gzip"
 	"net/http"
+	"time"
 )
 
 func allMiddlewares(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc {
@@ -15,16 +16,16 @@ func allMiddlewares(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc {
 }
 
 func (h *HTTP) logMiddleWare(next relayHandlerFunc) relayHandlerFunc {
-	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request) {
+	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time) {
 		if h.log {
 			h.logger.Println("Got request on: " + r.URL.Path)
 		}
-		next(h, w, r)
+		next(h, w, r, start)
 	})
 }
 
 func (h *HTTP) bodyMiddleWare(next relayHandlerFunc) relayHandlerFunc {
-	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request) {
+	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time) {
 		var body = r.Body
 
 		if r.Header.Get("Content-Encoding") == "gzip" {
@@ -38,12 +39,12 @@ func (h *HTTP) bodyMiddleWare(next relayHandlerFunc) relayHandlerFunc {
 		}
 
 		r.Body = body
-		next(h, w, r)
+		next(h, w, r, start)
 	})
 }
 
 func (h *HTTP) queryMiddleWare(next relayHandlerFunc) relayHandlerFunc {
-	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request) {
+	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time) {
 		queryParams := r.URL.Query()
 
 		if queryParams.Get("db") == "" && (r.URL.Path == "/write" || r.URL.Path == "/api/v1/prom/write") {
@@ -56,7 +57,7 @@ func (h *HTTP) queryMiddleWare(next relayHandlerFunc) relayHandlerFunc {
 		}
 
 		r.URL.RawQuery = queryParams.Encode()
-		next(h, w, r)
+		next(h, w, r, start)
 	})
 
 }
