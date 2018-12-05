@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"testing"
+	"time"
 )
 
 // Body is an empty body which implements io.Reader in order to create valid http.Requests
@@ -21,20 +22,20 @@ func (b *Body) Write(p []byte) (int, error) { return b.buf.Write(p) }
 func (b Body) Close() error                 { return nil }
 
 // End is a placeholder http Handler used to test middlewares
-func (h *HTTP) End(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) End(w http.ResponseWriter, r *http.Request, s time.Time) {
 	return
 }
 
 // EndTag is a placeholder http Handler used to test middlewares, which changes a variable
-func (h *HTTP) EndTag(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) EndTag(w http.ResponseWriter, r *http.Request, s time.Time) {
 	wasInEnd = true
 	return
 }
 
 func (h *HTTP) tagMiddleware(next relayHandlerFunc) relayHandlerFunc {
-	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request) {
+	return relayHandlerFunc(func(h *HTTP, w http.ResponseWriter, r *http.Request, s time.Time) {
 		wasInMiddleware = true
-		next(h, w, r)
+		next(h, w, r, s)
 	})
 }
 
@@ -147,7 +148,7 @@ func TestLogMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	buf, _ := ioutil.ReadAll(logger.buffer)
 	assert.Equal(t, string(buf), "Got request on: influxdb\n")
 }
@@ -162,7 +163,7 @@ func TestLogMiddlewareNoLog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	buf, _ := ioutil.ReadAll(logger.buffer)
 	assert.Equal(t, string(buf), "")
 }
@@ -178,7 +179,7 @@ func TestQueryMiddleware(t *testing.T) {
 	}
 	url, _ := r.URL.Parse("http://influxdb:8086/write?db=mydb")
 	r.URL = url
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	assert.Equal(t, emptyWriter, w)
 }
 
@@ -193,7 +194,7 @@ func TestQueryMiddlewareNoDB(t *testing.T) {
 	}
 	url, _ := r.URL.Parse("http://influxdb:8086/write")
 	r.URL = url
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	WriterTest(t, errorDbWriter, w)
 }
 
@@ -208,7 +209,7 @@ func TestQueryMiddlewareRp(t *testing.T) {
 	}
 	url, _ := r.URL.Parse("http://influxdb:8086/write?db=mydb")
 	r.URL = url
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	assert.Equal(t, emptyWriter, w)
 	queryParams := r.URL.Query()
 	assert.Equal(t, "patate", queryParams.Get("rp"))
@@ -223,7 +224,7 @@ func TestBodyMiddleWareNoGzip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	assert.Equal(t, emptyWriter, w)
 }
 
@@ -237,7 +238,7 @@ func TestBodyMiddleWareErrorGzip(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.Header.Set("Content-Encoding", "gzip")
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	WriterTest(t, errorGzipWriter, w)
 }
 
@@ -250,7 +251,7 @@ func TestBodyMiddleWareGzip(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.Header.Set("Content-Encoding", "gzip")
-	handler(h, w, r)
+	handler(h, w, r, ti)
 	buf, _ := ioutil.ReadAll(r.Body)
 	assert.Equal(t, "GOOOOD", string(buf))
 }
@@ -266,7 +267,7 @@ func TestAllMiddlewares(t *testing.T) {
 		(*HTTP).tagMiddleware,
 	}
 	chain := allMiddlewares(h, (*HTTP).EndTag)
-	chain(h, w, r)
+	chain(h, w, r, ti)
 	assert.Equal(t, true, wasInMiddleware)
 	assert.Equal(t, true, wasInEnd)
 }

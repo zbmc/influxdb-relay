@@ -6,12 +6,13 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/influxdata/influxdb/models"
 	"github.com/vente-privee/influxdb-relay/config"
 )
 
-func (h *HTTP) handleStatus(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handleStatus(w http.ResponseWriter, r *http.Request, _ time.Time) {
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		st := make(map[string]map[string]string)
 
@@ -28,7 +29,7 @@ func (h *HTTP) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *HTTP) handlePing(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handlePing(w http.ResponseWriter, r *http.Request, _ time.Time) {
 	if r.Method == http.MethodGet || r.Method == http.MethodHead {
 		for key, value := range h.pingResponseHeaders {
 			w.Header().Add(key, value)
@@ -40,7 +41,7 @@ func (h *HTTP) handlePing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request, _ time.Time) {
 	// Client to perform the raw queries
 	client := http.Client{}
 
@@ -136,7 +137,7 @@ func (h *HTTP) handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request, start time.Time) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		if r.Method == http.MethodOptions {
@@ -152,7 +153,7 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	_, _ = bodyBuf.ReadFrom(r.Body)
 
 	precision := queryParams.Get("precision")
-	points, err := models.ParsePointsWithPrecision(bodyBuf.Bytes(), h.start, precision)
+	points, err := models.ParsePointsWithPrecision(bodyBuf.Bytes(), start, precision)
 	if err != nil {
 		putBuf(bodyBuf)
 		jsonResponse(w, response{http.StatusBadRequest, "unable to parse points"})
@@ -194,6 +195,7 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 			resp, err := b.post(outBytes, query, authHeader)
 			if err != nil {
 				log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
+				log.Printf("Content: %s", bodyBuf.String())
 
 				responses <- &responseData{}
 			} else {
@@ -212,6 +214,8 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	var errResponse *responseData
+
+	w.Header().Set("Content-Type", "text/plain")
 
 	for resp := range responses {
 
@@ -248,7 +252,7 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
+func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request, _ time.Time) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		if r.Method == http.MethodOptions {
@@ -302,6 +306,8 @@ func (h *HTTP) handleProm(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	var errResponse *responseData
+
+	w.Header().Set("Content-Type", "text/plain")
 
 	for resp := range responses {
 

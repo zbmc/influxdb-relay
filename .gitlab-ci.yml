@@ -43,19 +43,21 @@ go-build:
     - ln -fsv ${CI_PROJECT_DIR} ${GOPATH}/src/github.com/vente-privee/influxdb-relay
   script:
     - cd ${GOPATH}/src/github.com/vente-privee/influxdb-relay
+    - go get
     - go build -a -ldflags '-extldflags "-static"' -o influxdb-relay
 
 
 # tests
 go-tests:
   stage: test
-  image: vpgrp/golang:latest
+  image: vpgrp/golang
   before_script:
     - mkdir -p ${GOPATH}/src/github.com/vente-privee
     - ln -fsv ${CI_PROJECT_DIR} ${GOPATH}/src/github.com/vente-privee/influxdb-relay
     - go get github.com/stretchr/testify/assert
   script:
     - cd ${GOPATH}/src/github.com/vente-privee/influxdb-relay
+    - go get
     - go test ./...
 
 
