@@ -42,7 +42,6 @@ type HTTP struct {
 	logger *log.Logger
 }
 
-
 type relayHandlerFunc func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time)
 type relayMiddleware func(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc
 
@@ -64,6 +63,7 @@ var (
 		"/ping":              (*HTTP).handlePing,
 		"/status":            (*HTTP).handleStatus,
 		"/admin":             (*HTTP).handleAdmin,
+		"/health":            (*HTTP).handleHealth,
 	}
 
 	middlewares = []relayMiddleware{
