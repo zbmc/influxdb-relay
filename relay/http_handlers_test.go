@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	ti = time.Now()
+	ti         = time.Now()
 	promBody   = Body{}
 	influxBody = Body{}
 	adminBody  = Body{}
@@ -89,16 +89,16 @@ var (
 	}
 	BackendUpPromWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{
+		header: http.Header{
 			"Content-Type": []string{"text/plain"},
 		},
-		code:     http.StatusNoContent,
+		code: http.StatusNoContent,
 	}
 	BackendUpPromError400Writer = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
 		header: http.Header{
 			"Content-Length": []string{"0"},
-			"Content-Type": []string{"text/plain"},
+			"Content-Type":   []string{"text/plain"},
 		},
 		code: http.StatusBadRequest,
 	}
@@ -139,16 +139,16 @@ var (
 	}
 	BackendUpInfluxWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{
+		header: http.Header{
 			"Content-Type": []string{"text/plain"},
 		},
-		code:     http.StatusNoContent,
+		code: http.StatusNoContent,
 	}
 	BackendUpInfluxError400Writer = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
 		header: http.Header{
 			"Content-Length": []string{"0"},
-			"Content-Type": []string{"text/plain"},
+			"Content-Type":   []string{"text/plain"},
 		},
 		code: http.StatusBadRequest,
 	}
@@ -170,10 +170,10 @@ var (
 	}
 	InfluxParsePointWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},
-		header:   http.Header{
+		header: http.Header{
 			"Content-Type": []string{"text/plain"},
 		},
-		code:     http.StatusNoContent,
+		code: http.StatusNoContent,
 	}
 	AdminWriter = &ResponseWriter{
 		writeBuf: &bytes.Buffer{},

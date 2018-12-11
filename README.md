@@ -115,7 +115,7 @@ ssl-combined-pem = "/path/to/influxdb-relay.pem"
 output = [
     # name: name of the backend, used for display purposes only.
     # location: full URL of the /write endpoint of the backend
-    # admin: full URL of the /query endpoint of the backend. OPTIONAL.
+    # admin: Partial URL of the backend, without any path
     # timeout: Go-parseable time duration. Fail writes if incomplete in this time.
     # skip-tls-verification: skip verification for HTTPS location. WARNING: it's insecure. Don't use in production.
     # type: type of input source. OPTIONAL: see below for more information.
@@ -161,6 +161,8 @@ The `type` parameter in the configuration file defaults to `influxdb`.
 
 ### Administrative tasks
 
+#### /admin endpoint
+
 Whereas data manipulation relies on the `/write` endpoint, some other features
 such as database or user management are based on the `/query` endpoint. As
 InfluxDB Relay does not send back a response body to the client(s), we are not
@@ -181,8 +183,8 @@ bind-addr = "127.0.0.1:9096"
 # Array of InfluxDB instances to use as backends for Relay.
 output = [
     # InfluxDB
-    { name="local-influxdb01", location="http://127.0.0.1:8086/write", admin="http://127.0.0.1:8086/query", type="influxdb" },
-    { name="local-influxdb02", location="http://127.0.0.1:7086/write", admin="http://127.0.0.1:7086/query", type="influxdb" },
+    { name="local-influxdb01", location="http://127.0.0.1:8086/write", admin="http://127.0.0.1:8086", type="influxdb" },
+    { name="local-influxdb02", location="http://127.0.0.1:7086/write", admin="http://127.0.0.1:7086", type="influxdb" },
 ]
 ```
 
@@ -195,6 +197,31 @@ curl -X POST "http://127.0.0.1:9096/admin" --data-urlencode 'q=CREATE DATABASE s
 
 Errors will be logged just like regular `/write` queries. The HTTP response
 bodies will not be forwarded back to the clients.
+
+#### /health endpoint
+
+This endpoint uses the same configuration as the `/admin` endpoint, and provides a quick way to check the state of all the backends.
+It will return a JSON object detailing the status of the backends like this : 
+
+```json
+{
+  "status": "problem",
+  "problem": {
+    "local-influxdb01": "KO. Get http://influxdb/ping: dial tcp: lookup influxdb on 0.0.0.0:8086: no such host"
+  },
+  "healthy": {
+    "local-influxdb02": "OK. Time taken 3ms"
+  }
+}
+```
+
+If the relay encounters an error while checking a backend, this backend will be reported with the associated error in the `problems` object.
+The backends wich the relay was able to communicate with will be reported in the healthy object.
+
+The status field is a summary of the general state of the backends, the defined states are as follows:
+* `healthy`: no errors were encountered
+* `problem`: some backends, but no all of them, returned errors
+* `critical`: every backend returned an error
 
 ## Limitations
 
