@@ -114,7 +114,8 @@ func (h *HTTP) handleHealth(w http.ResponseWriter, _ *http.Request, _ time.Time)
 			if report.Healthy == nil {
 				report.Healthy = make(map[string]string)
 			}
-			report.Healthy[r.name] = "OK. Time taken " + string(r.duration/time.Millisecond) + " ms"
+			report.Healthy[r.name] = "OK. Time taken " + r.duration.String()
+
 		} else {
 			if report.Problem == nil {
 				report.Problem = make(map[string]string)
@@ -289,7 +290,9 @@ func (h *HTTP) handleStandard(w http.ResponseWriter, r *http.Request, start time
 			resp, err := b.post(outBytes, query, authHeader)
 			if err != nil {
 				log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
-				log.Printf("Content: %s", bodyBuf.String())
+				if h.log {
+					h.logger.Printf("Content: %s", bodyBuf.String())
+				}
 
 				responses <- &responseData{}
 			} else {
