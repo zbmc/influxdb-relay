@@ -2,7 +2,6 @@ package relay
 
 import (
 	"bytes"
-	"compress/gzip"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -11,13 +10,14 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/influxdata/influxdb/models"
+	"github.com/vente-privee/influxdb-relay/config"
 )
 
 // HTTP is a relay for HTTP influxdb writes
@@ -29,13 +29,25 @@ type HTTP struct {
 	cert string
 	rp   string
 
+	pingResponseCode    int
+	pingResponseHeaders map[string]string
+
 	closing int64
 	l       net.Listener
 
 	backends []*httpBackend
+
+	start  time.Time
+	log    bool
+	logger *log.Logger
 }
 
+type relayHandlerFunc func(h *HTTP, w http.ResponseWriter, r *http.Request, start time.Time)
+type relayMiddleware func(h *HTTP, handlerFunc relayHandlerFunc) relayHandlerFunc
+
+// Default HTTP settings and a few constants
 const (
+	DefaultHTTPPingResponse = http.StatusNoContent
 	DefaultHTTPTimeout      = 10 * time.Second
 	DefaultMaxDelayInterval = 10 * time.Second
 	DefaultBatchSizeKB      = 512
@@ -44,20 +56,58 @@ const (
 	MB = 1024 * KB
 )
 
-func NewHTTP(cfg HTTPConfig) (Relay, error) {
+var (
+	handlers = map[string]relayHandlerFunc{
+		"/write":             (*HTTP).handleStandard,
+		"/api/v1/prom/write": (*HTTP).handleProm,
+		"/ping":              (*HTTP).handlePing,
+		"/status":            (*HTTP).handleStatus,
+		"/admin":             (*HTTP).handleAdmin,
+		"/health":            (*HTTP).handleHealth,
+	}
+
+	middlewares = []relayMiddleware{
+		(*HTTP).bodyMiddleWare,
+		(*HTTP).queryMiddleWare,
+		(*HTTP).logMiddleWare,
+	}
+)
+
+// NewHTTP creates a new HTTP relay
+// This relay will most likely be tied to a RelayService
+// and manage a set of HTTPBackends
+func NewHTTP(cfg config.HTTPConfig, verbose bool) (Relay, error) {
 	h := new(HTTP)
 
 	h.addr = cfg.Addr
 	h.name = cfg.Name
+	h.log = verbose
+	if verbose {
+		h.logger = log.New(os.Stdout, "", 0)
+	}
+
+	h.pingResponseCode = DefaultHTTPPingResponse
+	if cfg.DefaultPingResponse != 0 {
+		h.pingResponseCode = cfg.DefaultPingResponse
+	}
+
+	h.pingResponseHeaders = make(map[string]string)
+	h.pingResponseHeaders["X-InfluxDB-Version"] = "relay"
+	if h.pingResponseCode != http.StatusNoContent {
+		h.pingResponseHeaders["Content-Length"] = "0"
+	}
 
 	h.cert = cfg.SSLCombinedPem
 	h.rp = cfg.DefaultRetentionPolicy
 
+	// If a cert is specified, this means the user
+	// wants to do HTTPS
 	h.schema = "http"
 	if h.cert != "" {
 		h.schema = "https"
 	}
 
+	// For each output specified in the config, we are going to create a backend
 	for i := range cfg.Outputs {
 		backend, err := newHTTPBackend(&cfg.Outputs[i])
 		if err != nil {
@@ -70,14 +120,20 @@ func NewHTTP(cfg HTTPConfig) (Relay, error) {
 	return h, nil
 }
 
+// Name is the name of the HTTP relay
+// a default name might be generated if it is
+// not specified in the configuration file
 func (h *HTTP) Name() string {
 	if h.name == "" {
 		return fmt.Sprintf("%s://%s", h.schema, h.addr)
 	}
+
 	return h.name
 }
 
+// Run actually launch the HTTP endpoint
 func (h *HTTP) Run() error {
+	var cert tls.Certificate
 	l, err := net.Listen("tcp", h.addr)
 	if err != nil {
 		return err
@@ -85,7 +141,7 @@ func (h *HTTP) Run() error {
 
 	// support HTTPS
 	if h.cert != "" {
-		cert, err := tls.LoadX509KeyPair(h.cert, h.cert)
+		cert, err = tls.LoadX509KeyPair(h.cert, h.cert)
 		if err != nil {
 			return err
 		}
@@ -106,174 +162,23 @@ func (h *HTTP) Run() error {
 	return err
 }
 
+// Stop actually stops the HTTP endpoint
 func (h *HTTP) Stop() error {
 	atomic.StoreInt64(&h.closing, 1)
 	return h.l.Close()
 }
 
+// ServeHTTP is the function that handles the different route
+// The response is a JSON object describing the state of the operation
 func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
+	//h.start = time.Now()
 
-	if r.URL.Path == "/ping" && (r.Method == "GET" || r.Method == "HEAD") {
-		w.Header().Add("X-InfluxDB-Version", "relay")
-		w.WriteHeader(http.StatusNoContent)
+	if fun, ok := handlers[r.URL.Path]; ok {
+		allMiddlewares(h, fun)(h, w, r, time.Now())
+	} else {
+		jsonResponse(w, response{http.StatusNotFound, http.StatusText(http.StatusNotFound)})
 		return
 	}
-
-	if r.URL.Path == "/status" && (r.Method == "GET" || r.Method == "HEAD") {
-		st := make(map[string]map[string]string)
-
-		for _, b := range h.backends {
-			st[b.name] = b.poster.getStats()
-		}
-
-		j, err := json.Marshal(st)
-
-		if err != nil {
-			log.Printf("error: %s", err)
-			jsonResponse(w, http.StatusInternalServerError, "json marshalling failed")
- 			return
-		}
-
-		jsonResponse(w, http.StatusOK, fmt.Sprintf("\"status\": %s", string(j)))
-		return
-	}
-
-	if r.URL.Path != "/write" {
-		jsonResponse(w, http.StatusNotFound, "invalid write endpoint")
-		return
-	}
-
-	if r.Method != "POST" {
-		w.Header().Set("Allow", "POST")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusNoContent)
-		} else {
-			jsonResponse(w, http.StatusMethodNotAllowed, "invalid write method")
-		}
-		return
-	}
-
-	queryParams := r.URL.Query()
-
-	// fail early if we're missing the database
-	if queryParams.Get("db") == "" {
-		jsonResponse(w, http.StatusBadRequest, "missing parameter: db")
-		return
-	}
-
-	if queryParams.Get("rp") == "" && h.rp != "" {
-		queryParams.Set("rp", h.rp)
-	}
-
-	var body = r.Body
-
-	if r.Header.Get("Content-Encoding") == "gzip" {
-		b, err := gzip.NewReader(r.Body)
-		if err != nil {
-			jsonResponse(w, http.StatusBadRequest, "unable to decode gzip body")
-		}
-		defer b.Close()
-		body = b
-	}
-
-	bodyBuf := getBuf()
-	_, err := bodyBuf.ReadFrom(body)
-	if err != nil {
-		putBuf(bodyBuf)
-		jsonResponse(w, http.StatusInternalServerError, "problem reading request body")
-		return
-	}
-
-	precision := queryParams.Get("precision")
-	points, err := models.ParsePointsWithPrecision(bodyBuf.Bytes(), start, precision)
-	if err != nil {
-		putBuf(bodyBuf)
-		jsonResponse(w, http.StatusBadRequest, "unable to parse points")
-		return
-	}
-
-	outBuf := getBuf()
-	for _, p := range points {
-		if _, err = outBuf.WriteString(p.PrecisionString(precision)); err != nil {
-			break
-		}
-		if err = outBuf.WriteByte('\n'); err != nil {
-			break
-		}
-	}
-
-	// done with the input points
-	putBuf(bodyBuf)
-
-	if err != nil {
-		putBuf(outBuf)
-		jsonResponse(w, http.StatusInternalServerError, "problem writing points")
-		return
-	}
-
-	// normalize query string
-	query := queryParams.Encode()
-
-	outBytes := outBuf.Bytes()
-
-	// check for authorization performed via the header
-	authHeader := r.Header.Get("Authorization")
-
-	var wg sync.WaitGroup
-	wg.Add(len(h.backends))
-
-	var responses = make(chan *responseData, len(h.backends))
-
-	for _, b := range h.backends {
-		b := b
-		go func() {
-			defer wg.Done()
-			resp, err := b.post(outBytes, query, authHeader)
-			if err != nil {
-				log.Printf("Problem posting to relay %q backend %q: %v", h.Name(), b.name, err)
-			} else {
-				if resp.StatusCode/100 == 5 {
-					log.Printf("5xx response for relay %q backend %q: %v", h.Name(), b.name, resp.StatusCode)
-				}
-				responses <- resp
-			}
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(responses)
-		putBuf(outBuf)
-	}()
-
-	var errResponse *responseData
-
-	for resp := range responses {
-		switch resp.StatusCode / 100 {
-		case 2:
-			w.WriteHeader(http.StatusNoContent)
-			return
-
-		case 4:
-			// user error
-			resp.Write(w)
-			return
-
-		default:
-			// hold on to one of the responses to return back to the client
-			errResponse = resp
-		}
-	}
-
-	// no successful writes
-	if errResponse == nil {
-		// failed to make any valid request...
-		jsonResponse(w, http.StatusServiceUnavailable, "unable to write points")
-		return
-	}
-
-	errResponse.Write(w)
 }
 
 type responseData struct {
@@ -297,17 +202,18 @@ func (rd *responseData) Write(w http.ResponseWriter) {
 	w.Write(rd.Body)
 }
 
-func jsonResponse(w http.ResponseWriter, code int, message string) {
-	var data string
-	if code/100 != 2 {
-		data = fmt.Sprintf("{\"error\":%q}\n", message)
-	} else {
-		data = fmt.Sprintf("{%s}\n", message)
+func jsonResponse(w http.ResponseWriter, r response) {
+	data, err := json.Marshal(r.body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Length", fmt.Sprint(len(data)))
-	w.WriteHeader(code)
-	w.Write([]byte(data))
+	w.WriteHeader(r.code)
+
+	_, _ = w.Write(data)
 }
 
 type poster interface {
@@ -344,8 +250,8 @@ func (s *simplePoster) getStats() map[string]string {
 	return v
 }
 
-func (b *simplePoster) post(buf []byte, query string, auth string) (*responseData, error) {
-	req, err := http.NewRequest("POST", b.location, bytes.NewReader(buf))
+func (s *simplePoster) post(buf []byte, query string, auth string) (*responseData, error) {
+	req, err := http.NewRequest("POST", s.location, bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}
@@ -357,23 +263,20 @@ func (b *simplePoster) post(buf []byte, query string, auth string) (*responseDat
 		req.Header.Set("Authorization", auth)
 	}
 
-	resp, err := b.client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = resp.Body.Close(); err != nil {
-		return nil, err
-	}
-
 	return &responseData{
-		ContentType:     resp.Header.Get("Conent-Type"),
-		ContentEncoding: resp.Header.Get("Conent-Encoding"),
+		ContentType:     resp.Header.Get("Content-Type"),
+		ContentEncoding: resp.Header.Get("Content-Encoding"),
 		StatusCode:      resp.StatusCode,
 		Body:            data,
 	}, nil
@@ -381,10 +284,13 @@ func (b *simplePoster) post(buf []byte, query string, auth string) (*responseDat
 
 type httpBackend struct {
 	poster
-	name string
+	name      string
+	inputType config.Input
+	admin     string
 }
 
-func newHTTPBackend(cfg *HTTPOutputConfig) (*httpBackend, error) {
+func newHTTPBackend(cfg *config.HTTPOutputConfig) (*httpBackend, error) {
+	// Get default name
 	if cfg.Name == "" {
 		cfg.Name = cfg.Location
 	}
@@ -421,11 +327,14 @@ func newHTTPBackend(cfg *HTTPOutputConfig) (*httpBackend, error) {
 	}
 
 	return &httpBackend{
-		poster: p,
-		name:   cfg.Name,
+		poster:    p,
+		name:      cfg.Name,
+		inputType: cfg.InputType,
+		admin:     cfg.Admin,
 	}, nil
 }
 
+// ErrBufferFull error indicates that retry buffer is full
 var ErrBufferFull = errors.New("retry buffer full")
 
 var bufPool = sync.Pool{New: func() interface{} { return new(bytes.Buffer) }}
