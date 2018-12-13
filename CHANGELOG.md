@@ -27,3 +27,8 @@ Nov 15 2018 Maxime CORBIN <mcorbin@vente-privee.com>
     * Improve `/ping` route
     * Improve logging
     * Add `-version` option
+    
+Dec 13 2018 Maxime CORBIN <mcorbin@vente-privee.com>
+    * Added `/admin` endpoint that can be used to create or remove databases
+    * Added `/health` endpoint that can be used to monitor the health status of every backend
+    * Fixed some performance bugs & added a few more logs
