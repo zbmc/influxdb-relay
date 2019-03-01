@@ -125,10 +125,10 @@ ssl-combined-pem = "/path/to/influxdb-relay.pem"
 # InfluxDB instances to use as backend for Relay
 [[http.output]]
 # name: name of the backend, used for display purposes only.
-name="local-influxdb01"
+name = "local-influxdb01"
 
 # location: full URL of the /write endpoint of the backend
-location="http://127.0.0.1:8086/"
+location = "http://127.0.0.1:8086/"
 
 # endpoints: Routes to use on Relay
 # write: Route for standard InfluxDB request
@@ -138,30 +138,30 @@ location="http://127.0.0.1:8086/"
 endpoints = {write="/write", write_prom="/api/v1/prom/write", ping="/ping", query="/query"}
 
 # timeout: Go-parseable time duration. Fail writes if incomplete in this time.
-timeout="10s"
+timeout = "10s"
 
 # skip-tls-verification: skip verification for HTTPS location. WARNING: it's insecure. Don't use in production.
 skip-tls-verification = false
 
 # InfluxDB
 [[http.output]]
-name="local-influxdb02"
-location="http://127.0.0.1:7086/"
+name = "local-influxdb02"
+location = "http://127.0.0.1:7086/"
 endpoints = {write="/write", ping="/ping", query="/query"}
-timeout="10s"
+timeout = "10s"
 
 # Prometheus
 [[http.output]]
-name="local-influxdb03"
-location="http://127.0.0.1:6086/"
+name = "local-influxdb03"
+location = "http://127.0.0.1:6086/"
 endpoints = {write="/write", write_prom="/api/v1/prom/write", ping="/ping", query="/query"}
-timeout="10s"
+timeout = "10s"
 
 [[http.output]]
-name="local-influxdb04"
-location="http://127.0.0.1:5086/"
+name = "local-influxdb04"
+location = "http://127.0.0.1:5086/"
 endpoints = {write="/write", write_prom="/api/v1/prom/write", ping="/ping", query="/query"}
-timeout="10s"
+timeout = "10s"
 
 [[udp]]
 # Name of the UDP server, used for display purposes only.
@@ -179,18 +179,18 @@ precision = "n" # Can be n, u, ms, s, m, h
 # InfluxDB instance to use as backend for Relay.
 [[udp.output]]
 # name: name of the backend, used for display purposes only.
-name="local1"
+name = "local-influxdb01"
 
 # location: host and port of backend.
-location="127.0.0.1:8089"
+location = "127.0.0.1:8089"
 
 # mtu: maximum output payload size
-mtu=512
+mtu = 512
 
 [[udp.output]]
-name="local2"
-location="127.0.0.1:7089"
-mtu=1024
+name = "local-influxdb02"
+location = "127.0.0.1:7089"
+mtu = 1024
 ```
 
 InfluxDB Relay is able to forward from a variety of input sources, including:
