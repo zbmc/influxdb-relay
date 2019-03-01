@@ -16,6 +16,8 @@
 Maintained fork of [influxdb-relay][overview-href] originally developed by
 InfluxData. Replicate InfluxDB data for high availability.
 
+**Be careful, we have deeply changed the configuration file syntax.**
+
 ## Description
 
 This project adds a basic high availability layer to InfluxDB. With the right
@@ -24,8 +26,8 @@ setup.
 
 ## Tested on
 
-- [Go](https://golang.org/doc/install) 1.7.4 to 1.11.2
-- [InfluxDB](https://docs.influxdata.com/influxdb/v1.6/introduction/installation/) 1.6.4 to 1.7
+- [Go](https://golang.org/doc/install) 1.7.4 to 1.12
+- [InfluxDB](https://docs.influxdata.com/influxdb/v1.7/introduction/installation/) 1.5 to 1.7 (2.x not yet supported)
 
 Other versions will probably work but are untested.
 
@@ -156,7 +158,7 @@ endpoints = {write="/write", write_prom="/api/v1/prom/write", ping="/ping", quer
 timeout="10s"
 
 [[http.output]]
-name="local-influxdb05"
+name="local-influxdb04"
 location="http://127.0.0.1:5086/"
 endpoints = {write="/write", write_prom="/api/v1/prom/write", ping="/ping", query="/query"}
 timeout="10s"
