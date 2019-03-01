@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	relayVersion = "3.0.0"
+	relayVersion = "3.0.1"
 )
 
 var (
