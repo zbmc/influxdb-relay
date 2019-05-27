@@ -74,7 +74,10 @@ func (r *retryBuffer) post(buf []byte, query string, auth string, endpoint strin
 	// already buffering or failed request
 	batch, err := r.list.add(buf, query, auth, endpoint)
 
-	defer batch.wg.Wait()
+	if batch != nil {
+		defer batch.wg.Wait()
+	}
+
 	// We do not wait for the WaitGroup because we don't want
 	// to leave the connection open
 	// The client will receive a 202 which closes the connection and
