@@ -24,7 +24,7 @@ func (h *HTTP) handleStatus(w http.ResponseWriter, r *http.Request, _ time.Time)
 
 		j, _ := json.Marshal(st)
 
-		jsonResponse(w, response{http.StatusOK, fmt.Sprintf("\"status\": %s", string(j))})
+		jsonResponse(w, response{http.StatusOK, fmt.Sprintf("{\"status\": %s}", string(j))})
 	} else {
 		jsonResponse(w, response{http.StatusMethodNotAllowed, http.StatusText(http.StatusMethodNotAllowed)})
 		return
