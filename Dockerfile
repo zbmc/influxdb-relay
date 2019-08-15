@@ -42,5 +42,7 @@ RUN rm -fr /go/src/github.com && \
 
 ENTRYPOINT [ "/usr/bin/influxdb-relay" ]
 
+EXPOSE 9096
+
 CMD [ "-config", "/etc/influxdb-relay/influxdb-relay.conf" ]
 # EOF
