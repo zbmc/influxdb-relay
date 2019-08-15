@@ -23,7 +23,7 @@ type Operation func() error
 // There is no delay between attempts of different operations.
 type retryBuffer struct {
 	buffering int32
-	flushing int32
+	flushing  int32
 
 	initialInterval time.Duration
 	multiplier      time.Duration
@@ -72,9 +72,12 @@ func (r *retryBuffer) post(buf []byte, query string, auth string, endpoint strin
 	}
 
 	// already buffering or failed request
-	_, err := r.list.add(buf, query, auth, endpoint)
+	batch, err := r.list.add(buf, query, auth, endpoint)
 
-	// batch.wg.Wait()
+	if batch != nil {
+		defer batch.wg.Wait()
+	}
+
 	// We do not wait for the WaitGroup because we don't want
 	// to leave the connection open
 	// The client will receive a 202 which closes the connection and
@@ -105,8 +108,8 @@ func (r *retryBuffer) run() {
 				break
 			}
 
-      resp, err := r.p.post(buf.Bytes(), batch.query, batch.auth, batch.endpoint)
-      if err == nil && resp.StatusCode/100 != 5 {
+			resp, err := r.p.post(buf.Bytes(), batch.query, batch.auth, batch.endpoint)
+			if err == nil && resp.StatusCode/100 != 5 {
 				batch.resp = resp
 				atomic.StoreInt32(&r.buffering, 0)
 				batch.wg.Done()
@@ -237,6 +240,6 @@ func (l *bufferList) add(buf []byte, query string, auth string, endpoint string)
 		b.bufs = append(b.bufs, buf)
 	}
 
-	l.cond.L.Unlock()
+	defer l.cond.L.Unlock()
 	return *cur, nil
 }

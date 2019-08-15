@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/influxdata/influxdb/models"
-	"github.com/vente-privee/influxdb-relay/config"
+	"github.com/veepee-moc/influxdb-relay/config"
 )
 
 // HTTP is a relay for HTTP influxdb writes
@@ -70,7 +70,7 @@ var (
 		"/ping":              (*HTTP).handlePing,
 		"/status":            (*HTTP).handleStatus,
 		"/admin":             (*HTTP).handleAdmin,
-		"/admin/flush":				(*HTTP).handleFlush,
+		"/admin/flush":       (*HTTP).handleFlush,
 		"/health":            (*HTTP).handleHealth,
 	}
 
@@ -317,33 +317,33 @@ type httpBackend struct {
 // validateRegexps checks if a request on this backend matches
 // all the tag regular expressions for this backend
 func (b *httpBackend) validateRegexps(ps models.Points) error {
-  // For each point
-  for _, p := range ps {
-    // Check if the measurement of each point
-    // matches ALL measurement regular expressions
-    m := p.Name()
-    for _, r := range b.measurementRegexps {
-      if !r.Match(m) {
-        return errors.New("bad measurement")
-      }
-    }
+	// For each point
+	for _, p := range ps {
+		// Check if the measurement of each point
+		// matches ALL measurement regular expressions
+		m := p.Name()
+		for _, r := range b.measurementRegexps {
+			if !r.Match(m) {
+				return errors.New("bad measurement")
+			}
+		}
 
-    // For each tag of each point
-    for _, t := range p.Tags() {
-      // Check if each tag of each point
-      // matches ALL tags regular expressions
-      for _, r := range b.tagRegexps {
-        if !r.Match(t.Key) {
-          return errors.New("bad tag")
-        }
-      }
-    }
-  }
+		// For each tag of each point
+		for _, t := range p.Tags() {
+			// Check if each tag of each point
+			// matches ALL tags regular expressions
+			for _, r := range b.tagRegexps {
+				if !r.Match(t.Key) {
+					return errors.New("bad tag")
+				}
+			}
+		}
+	}
 
-  return nil
+	return nil
 }
 
-func (b *httpBackend) getRetryBuffer() *retryBuffer	{
+func (b *httpBackend) getRetryBuffer() *retryBuffer {
 	if p, ok := b.poster.(*retryBuffer); ok {
 		return p
 	}
@@ -413,8 +413,8 @@ func newHTTPBackend(cfg *config.HTTPOutputConfig, fs config.Filters) (*httpBacke
 		name:               cfg.Name,
 		tagRegexps:         tagRegexps,
 		measurementRegexps: measurementRegexps,
-		endpoints: cfg.Endpoints,
-		location:  cfg.Location,
+		endpoints:          cfg.Endpoints,
+		location:           cfg.Location,
 	}, nil
 }
 
