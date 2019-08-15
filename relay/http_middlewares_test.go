@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/vente-privee/influxdb-relay/config"
+	"github.com/veepee-moc/influxdb-relay/config"
 	"time"
 )
 
