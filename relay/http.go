@@ -246,7 +246,7 @@ type poster interface {
 }
 
 type simpleStats struct {
-	location string
+	Location string `json:"location"`
 }
 
 type simplePoster struct {
@@ -273,7 +273,7 @@ func newSimplePoster(location string, timeout time.Duration, skipTLSVerification
 }
 
 func (s *simplePoster) getStats() stats {
-	return simpleStats{location: s.location}
+	return simpleStats{Location: s.location}
 }
 
 func (s *simplePoster) post(buf []byte, query string, auth string, endpoint string) (*responseData, error) {
