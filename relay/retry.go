@@ -51,16 +51,16 @@ func newRetryBuffer(size, batch int, max time.Duration, p poster) *retryBuffer {
 }
 
 type retryStats struct {
-	buffering int64
-	maxSize   int64
-	size      int64
+	Buffering int64 `json:"buffering"`
+	MaxSize   int64 `json:"maxSize"`
+	Size      int64 `json:"size"`
 }
 
 func (r *retryBuffer) getStats() stats {
 	stats := retryStats{}
-	stats.buffering = int64(r.buffering)
-	stats.maxSize = int64(r.list.maxSize)
-	stats.size = int64(r.list.size)
+	stats.Buffering = int64(r.buffering)
+	stats.MaxSize = int64(r.list.maxSize)
+	stats.Size = int64(r.list.size)
 	return stats
 }
 
