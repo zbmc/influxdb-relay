@@ -5,8 +5,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/vente-privee/influxdb-relay/config"
-	"github.com/vente-privee/influxdb-relay/relay"
+	"github.com/veepee-moc/influxdb-relay/config"
+	"github.com/veepee-moc/influxdb-relay/relay"
 )
 
 // Service is a map of relays
